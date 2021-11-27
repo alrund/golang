@@ -15,7 +15,7 @@ func Unpack(str string) (string, error) {
 	}
 	var (
 		previousRune rune
-		builder strings.Builder
+		builder      strings.Builder
 	)
 	runes := []rune(str)
 	length := len(runes)
