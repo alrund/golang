@@ -7,7 +7,7 @@ import (
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -79,4 +79,63 @@ func TestTop10(t *testing.T) {
 			require.Equal(t, expected, Top10(text))
 		}
 	})
+
+	t.Run("less then 10", func(t *testing.T) {
+		require.Equal(t, []string{"three", "two", "one"}, Top10("one two two three three three"))
+	})
+}
+
+func TestCleanSource(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{input: "А   б  в", expected: "а б в"},
+		{input: "А,  б!   в.", expected: "а б в"},
+		{input: "А - Б - в.", expected: "а б в"},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.input, func(t *testing.T) {
+			result := cleanSource(tc.input)
+			require.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestGetNumbers(t *testing.T) {
+	numbers := getNumbers("one two two three three three")
+	require.Equal(t, 1, numbers["one"])
+	require.Equal(t, 2, numbers["two"])
+	require.Equal(t, 3, numbers["three"])
+}
+
+func TestSortWords(t *testing.T) {
+	words := []Word{
+		{Name: "three", Num: 3},
+		{Name: "one", Num: 1},
+		{Name: "four", Num: 4},
+		{Name: "fou", Num: 4},
+		{Name: "fo", Num: 4},
+		{Name: "two", Num: 2},
+	}
+
+	sortedWords := sortWords(words)
+
+	tests := []struct {
+		name  string
+		index int
+	}{
+		{name: "fo", index: 0},
+		{name: "four", index: 2},
+		{name: "one", index: 5},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.name, sortedWords[tc.index].Name)
+		})
+	}
 }
