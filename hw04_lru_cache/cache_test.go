@@ -49,8 +49,62 @@ func TestCache(t *testing.T) {
 		require.Nil(t, val)
 	})
 
-	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+	t.Run("pushing out elements by size", func(t *testing.T) {
+		c := NewCache(3)
+
+		c.Set("aaa", 100)
+		c.Set("bbb", 200)
+		c.Set("ccc", 300)
+		c.Set("ddd", 400)
+
+		_, ok := c.Get("aaa")
+		require.False(t, ok)
+	})
+
+	t.Run("pushing out elements by time", func(t *testing.T) {
+		c := NewCache(3)
+
+		c.Set("aaa", 100)
+		c.Set("bbb", 200)
+		c.Set("ccc", 300)
+
+		c.Set("aaa", 101)
+		c.Get("bbb")
+		c.Get("ccc")
+		c.Get("aaa")
+		c.Set("ddd", 400)
+
+		_, ok := c.Get("bbb")
+		require.False(t, ok)
+
+		val, ok := c.Get("aaa")
+		require.True(t, ok)
+		require.Equal(t, 101, val)
+
+		val, ok = c.Get("ccc")
+		require.True(t, ok)
+		require.Equal(t, 300, val)
+
+		val, ok = c.Get("ddd")
+		require.True(t, ok)
+		require.Equal(t, 400, val)
+	})
+
+	t.Run("clear cache", func(t *testing.T) {
+		c := NewCache(3)
+
+		c.Set("aaa", 100)
+		c.Set("bbb", 200)
+		c.Set("ccc", 300)
+
+		c.Clear()
+
+		_, ok := c.Get("aaa")
+		require.False(t, ok)
+		_, ok = c.Get("bbb")
+		require.False(t, ok)
+		_, ok = c.Get("ccc")
+		require.False(t, ok)
 	})
 }
 
