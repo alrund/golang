@@ -25,11 +25,7 @@ func (c *errorCounter) moreThen(limit int) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.i >= limit {
-		return true
-	}
-
-	return false
+	return c.i >= limit
 }
 
 func taskChannel(tasks []Task) <-chan Task {
