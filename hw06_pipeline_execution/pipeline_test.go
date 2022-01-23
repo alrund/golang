@@ -90,4 +90,31 @@ func TestPipeline(t *testing.T) {
 		require.Len(t, result, 0)
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
 	})
+
+	t.Run("stageChannelWithDone", func(t *testing.T) {
+		in := make(Bi)
+		done := make(Bi)
+		data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+		go func() {
+			<-time.After(sleepPerStage * 2)
+			close(done)
+		}()
+
+		go func() {
+			for _, v := range data {
+				in <- v
+				time.Sleep(sleepPerStage)
+			}
+			close(in)
+		}()
+
+		result := make([]int, 0, 10)
+		for s := range stageChannelWithDone(done, in) {
+			result = append(result, s.(int))
+		}
+
+		require.Greater(t, len(result), 0)
+		require.Less(t, len(result), len(data))
+	})
 }
