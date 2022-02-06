@@ -47,7 +47,12 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		return ErrCreatedFile
 	}
 
-	return CopyWithBar(toFile, fromFile, limit)
+	err = CopyWithBar(toFile, fromFile, limit)
+
+	fromFile.Close()
+	toFile.Close()
+
+	return err
 }
 
 func CopyWithBar(toFile, fromFile *os.File, limit int64) error {
