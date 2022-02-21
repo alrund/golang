@@ -11,10 +11,10 @@ var (
 	ErrInvalidValidator = errors.New("invalid validator for this type of field")
 	ErrUnknownValidator = errors.New("unknown validator")
 
-	ErrValid       = errors.New("validation error")
-	ErrValidLength = fmt.Errorf("length exceeded: %w", ErrValid)
-	ErrValidMin    = fmt.Errorf("min value exceeded: %w", ErrValid)
-	ErrValidMax    = fmt.Errorf("max value exceeded: %w", ErrValid)
+	ErrValidate       = errors.New("validation error")
+	ErrValidateLength = fmt.Errorf("length exceeded: %w", ErrValidate)
+	ErrValidateMin    = fmt.Errorf("min value exceeded: %w", ErrValidate)
+	ErrValidateMax    = fmt.Errorf("max value exceeded: %w", ErrValidate)
 )
 
 type Validator func(reflectValue reflect.Value, parameter string) error
@@ -50,7 +50,7 @@ func LenValidator(reflectValue reflect.Value, parameter string) error {
 			length,
 			value,
 			limit,
-			ErrValidLength)
+			ErrValidateLength)
 	}
 
 	return nil
@@ -67,7 +67,7 @@ func MinValidator(reflectValue reflect.Value, parameter string) error {
 	}
 
 	if value := reflectValue.Int(); value < int64(limit) {
-		return fmt.Errorf("%d less then %d: %w", value, limit, ErrValidMin)
+		return fmt.Errorf("%d less then %d: %w", value, limit, ErrValidateMin)
 	}
 
 	return nil
@@ -84,7 +84,7 @@ func MaxValidator(reflectValue reflect.Value, parameter string) error {
 	}
 
 	if value := reflectValue.Int(); value > int64(limit) {
-		return fmt.Errorf("%d more then %d: %w", value, limit, ErrValidMax)
+		return fmt.Errorf("%d more then %d: %w", value, limit, ErrValidateMax)
 	}
 
 	return nil

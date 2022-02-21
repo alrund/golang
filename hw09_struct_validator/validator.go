@@ -39,8 +39,8 @@ func Validate(v interface{}) error {
 		fieldName := reflectStructField.Name
 		validateTag := reflectStructField.Tag.Get(tagName)
 
-		validatorTags := NewValidatorTags(validateTag)
-		if validatorTags == nil {
+		validatorTags := MakeValidatorTags(validateTag)
+		if len(validatorTags) == 0 {
 			continue
 		}
 
@@ -57,7 +57,7 @@ func Validate(v interface{}) error {
 func ValidateSliceField(
 	fieldName string,
 	reflectValue reflect.Value,
-	validatorTags *ValidatorTags,
+	validatorTags ValidatorTags,
 	validationErrors ValidationErrors,
 ) ValidationErrors {
 	if reflectValue.Kind() != reflect.Slice {
@@ -88,14 +88,14 @@ func ValidateSliceField(
 func ValidateStringField(
 	fieldName string,
 	reflectValue reflect.Value,
-	validatorTags *ValidatorTags,
+	validatorTags ValidatorTags,
 	validationErrors ValidationErrors,
 ) ValidationErrors {
 	if reflectValue.Kind() != reflect.String {
 		return validationErrors
 	}
 
-	for _, validatorTag := range validatorTags.tags {
+	for _, validatorTag := range validatorTags {
 		validationError, err := ValidateField(fieldName, reflectValue, validatorTag)
 		if err != nil {
 			continue // TODO что делать с ошибками?
@@ -112,14 +112,14 @@ func ValidateStringField(
 func ValidateIntField(
 	fieldName string,
 	reflectValue reflect.Value,
-	validatorTags *ValidatorTags,
+	validatorTags ValidatorTags,
 	validationErrors ValidationErrors,
 ) ValidationErrors {
 	if reflectValue.Kind() != reflect.Int {
 		return validationErrors
 	}
 
-	for _, validatorTag := range validatorTags.tags {
+	for _, validatorTag := range validatorTags {
 		validationError, err := ValidateField(fieldName, reflectValue, validatorTag)
 		if err != nil {
 			continue // TODO что делать с ошибками?
@@ -147,7 +147,7 @@ func ValidateField(fieldName string, reflectValue reflect.Value, validatorTag Va
 		return nil, nil
 	}
 
-	if !errors.Is(validationError, ErrValid) {
+	if !errors.Is(validationError, ErrValidate) {
 		return nil, validationError
 	}
 
