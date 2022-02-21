@@ -42,7 +42,16 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			// Place your code here.
+			User{
+				"xxx",
+				"xxx",
+				300,
+				"test@test.ru",
+				"stuff",
+				[]string{"2322232211166", "22222222222066"},
+				nil,
+			},
+			nil,
 		},
 		// ...
 		// Place your code here.
@@ -53,8 +62,18 @@ func TestValidate(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
-			// Place your code here.
+			Validate(tt.in)
 			_ = tt
 		})
 	}
+
+	// t.Run("len validator positive", func(t *testing.T) {
+	//	err := LenValidator("qwerty", "len:36")
+	//	require.Nil(t, err)
+	// })
+	//
+	// t.Run("len validator error", func(t *testing.T) {
+	//	err := LenValidator("qwerty", "len:3")
+	//	require.Error(t, err)
+	// })
 }
