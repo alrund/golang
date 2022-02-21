@@ -26,27 +26,38 @@ const tagName = "validate"
 var ErrUnexpectedType = errors.New("unexpected type")
 
 func Validate(v interface{}) error {
-	r := reflect.ValueOf(v)
-	if r.Kind() != reflect.Struct {
-		return fmt.Errorf("expected a struct, but received %T: %w", r, ErrUnexpectedType)
+	structReflectValue := reflect.ValueOf(v)
+	if structReflectValue.Kind() != reflect.Struct {
+		return fmt.Errorf("expected a struct, but received %T: %w", structReflectValue, ErrUnexpectedType)
 	}
 
-	t := r.Type()
 	validationErrors := make(ValidationErrors, 0)
-	for i := 0; i < t.NumField(); i++ {
-		reflectStructField := t.Field(i)
-		reflectValue := r.Field(i)
-		fieldName := reflectStructField.Name
-		validateTag := reflectStructField.Tag.Get(tagName)
 
-		validatorTags := MakeValidatorTags(validateTag)
+	structReflectType := structReflectValue.Type()
+	for i := 0; i < structReflectType.NumField(); i++ {
+		reflectStructField := structReflectType.Field(i)
+		reflectValue := structReflectValue.Field(i)
+		structTag := reflectStructField.Tag.Get(tagName)
+
+		validatorTags := getValidatorTags(structTag)
 		if len(validatorTags) == 0 {
 			continue
 		}
 
-		validationErrors = ValidateSliceField(fieldName, reflectValue, validatorTags, validationErrors)
-		validationErrors = ValidateStringField(fieldName, reflectValue, validatorTags, validationErrors)
-		validationErrors = ValidateIntField(fieldName, reflectValue, validatorTags, validationErrors)
+		var fieldValidationErrors ValidationErrors
+		var err error
+
+		switch reflectValue.Kind() {
+		case reflect.Slice:
+			fieldValidationErrors, err = validateSliceField(reflectStructField.Name, reflectValue, validatorTags)
+		case reflect.String, reflect.Int:
+			fieldValidationErrors, err = validateSimpleField(reflectStructField.Name, reflectValue, validatorTags)
+		}
+
+		if err != nil {
+			return err
+		}
+		validationErrors = append(validationErrors, fieldValidationErrors...)
 	}
 
 	fmt.Println(validationErrors)
@@ -54,51 +65,30 @@ func Validate(v interface{}) error {
 	return validationErrors
 }
 
-func ValidateSliceField(
-	fieldName string,
-	reflectValue reflect.Value,
-	validatorTags ValidatorTags,
-	validationErrors ValidationErrors,
-) ValidationErrors {
-	if reflectValue.Kind() != reflect.Slice {
-		return validationErrors
+func validateSliceField(fieldName string, sliceReflectValue reflect.Value, validatorTags ValidatorTags) (ValidationErrors, error) {
+	reflectValues, ok := getSliceReflectValues(sliceReflectValue)
+	if !ok {
+		return nil, nil
 	}
 
-	stringSlice, ok := reflectValue.Interface().([]string)
-	if ok {
-		for _, vl := range stringSlice {
-			sr := reflect.ValueOf(vl)
-			validationErrors = ValidateStringField(fieldName, sr, validatorTags, validationErrors)
+	var validationErrors ValidationErrors
+	for _, reflectValue := range reflectValues {
+		fieldValidationErrors, err := validateSimpleField(fieldName, reflectValue, validatorTags)
+		if err != nil {
+			return nil, err
 		}
-		return validationErrors
+		validationErrors = append(validationErrors, fieldValidationErrors...)
 	}
-
-	intSlice, ok := reflectValue.Interface().([]int)
-	if ok {
-		for _, vl := range intSlice {
-			sr := reflect.ValueOf(vl)
-			validationErrors = ValidateIntField(fieldName, sr, validatorTags, validationErrors)
-		}
-		return validationErrors
-	}
-
-	return validationErrors
+	return validationErrors, nil
 }
 
-func ValidateStringField(
-	fieldName string,
-	reflectValue reflect.Value,
-	validatorTags ValidatorTags,
-	validationErrors ValidationErrors,
-) ValidationErrors {
-	if reflectValue.Kind() != reflect.String {
-		return validationErrors
-	}
+func validateSimpleField(fieldName string, reflectValue reflect.Value, validatorTags ValidatorTags) (ValidationErrors, error) {
+	var validationErrors ValidationErrors
 
 	for _, validatorTag := range validatorTags {
-		validationError, err := ValidateField(fieldName, reflectValue, validatorTag)
+		validationError, err := useValidator(fieldName, reflectValue, validatorTag)
 		if err != nil {
-			continue // TODO что делать с ошибками?
+			return nil, err
 		}
 		if validationError == nil {
 			continue
@@ -106,34 +96,10 @@ func ValidateStringField(
 		validationErrors = append(validationErrors, *validationError)
 	}
 
-	return validationErrors
+	return validationErrors, nil
 }
 
-func ValidateIntField(
-	fieldName string,
-	reflectValue reflect.Value,
-	validatorTags ValidatorTags,
-	validationErrors ValidationErrors,
-) ValidationErrors {
-	if reflectValue.Kind() != reflect.Int {
-		return validationErrors
-	}
-
-	for _, validatorTag := range validatorTags {
-		validationError, err := ValidateField(fieldName, reflectValue, validatorTag)
-		if err != nil {
-			continue // TODO что делать с ошибками?
-		}
-		if validationError == nil {
-			continue
-		}
-		validationErrors = append(validationErrors, *validationError)
-	}
-
-	return validationErrors
-}
-
-func ValidateField(fieldName string, reflectValue reflect.Value, validatorTag ValidatorTag) (*ValidationError, error) {
+func useValidator(fieldName string, reflectValue reflect.Value, validatorTag ValidatorTag) (*ValidationError, error) {
 	name, _ := validatorTag.getName()
 	parameter, _ := validatorTag.getParameter()
 
@@ -142,17 +108,49 @@ func ValidateField(fieldName string, reflectValue reflect.Value, validatorTag Va
 		return nil, err
 	}
 
-	validationError := validator(reflectValue, parameter)
-	if validationError == nil {
-		return nil, nil
+	verr := validator(reflectValue, parameter)
+	if !errors.Is(verr, ErrValidate) {
+		return nil, verr
 	}
 
-	if !errors.Is(validationError, ErrValidate) {
-		return nil, validationError
+	return &ValidationError{fieldName, verr}, nil
+}
+
+func getSliceReflectValues(reflectValue reflect.Value) ([]reflect.Value, bool) {
+	if stringReflectValues, ok := getStringSliceReflectValues(reflectValue); ok {
+		return stringReflectValues, true
+	}
+	if intReflectValues, ok := getIntSliceReflectValues(reflectValue); ok {
+		return intReflectValues, true
 	}
 
-	vErr := new(ValidationError)
-	vErr.Field = fieldName
-	vErr.Err = validationError
-	return vErr, nil
+	return nil, false
+}
+
+func getStringSliceReflectValues(reflectValue reflect.Value) ([]reflect.Value, bool) {
+	var values []reflect.Value
+	items, ok := reflectValue.Interface().([]string)
+	if !ok {
+		return values, false
+	}
+
+	for _, item := range items {
+		values = append(values, reflect.ValueOf(item))
+	}
+
+	return values, true
+}
+
+func getIntSliceReflectValues(reflectValue reflect.Value) ([]reflect.Value, bool) {
+	var values []reflect.Value
+	items, ok := reflectValue.Interface().([]int)
+	if !ok {
+		return values, false
+	}
+
+	for _, item := range items {
+		values = append(values, reflect.ValueOf(item))
+	}
+
+	return values, true
 }

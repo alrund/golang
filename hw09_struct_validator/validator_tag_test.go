@@ -34,17 +34,17 @@ func TestValidatorTag(t *testing.T) {
 	})
 
 	t.Run("tags positive", func(t *testing.T) {
-		vts := MakeValidatorTags("len:11|min:5|max:10")
+		vts := getValidatorTags("len:11|min:5|max:10")
 		require.Len(t, vts, 3)
 	})
 
 	t.Run("tags no separator", func(t *testing.T) {
-		vts := MakeValidatorTags("len:11")
+		vts := getValidatorTags("len:11")
 		require.Len(t, vts, 1)
 	})
 
 	t.Run("tags empty", func(t *testing.T) {
-		vts := MakeValidatorTags("")
+		vts := getValidatorTags("")
 		require.Len(t, vts, 0)
 	})
 }

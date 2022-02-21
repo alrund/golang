@@ -47,7 +47,7 @@ func TestValidate(t *testing.T) {
 				"xxx",
 				300,
 				"test@test.ru",
-				"stuff",
+				"stufffff",
 				[]string{"2322232211166", "22222222222066"},
 				nil,
 			},

@@ -27,9 +27,21 @@ func NewValidator(name string) (Validator, error) {
 		return MinValidator, nil
 	case "max":
 		return MaxValidator, nil
+	case "regexp":
+		return RegexpValidator, nil
+	case "in":
+		return InValidator, nil
 	}
 
 	return nil, fmt.Errorf("%s: %w", name, ErrUnknownValidator)
+}
+
+func RegexpValidator(reflectValue reflect.Value, parameter string) error {
+	return nil
+}
+
+func InValidator(reflectValue reflect.Value, parameter string) error {
+	return nil
 }
 
 func LenValidator(reflectValue reflect.Value, parameter string) error {

@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-const validatorSeparator = "|"
-const validatorNameSeparator = ":"
+const (
+	validatorSeparator     = "|"
+	validatorNameSeparator = ":"
+)
 
 var (
 	ErrValidatorTagNameSeparatorMissing = errors.New("validator name separator is missing")
@@ -43,7 +45,7 @@ func (v ValidatorTag) getParameter() (string, error) {
 	return parameter, nil
 }
 
-func MakeValidatorTags(tag string) ValidatorTags {
+func getValidatorTags(tag string) ValidatorTags {
 	if len(tag) == 0 {
 		return make(ValidatorTags, 0)
 	}
