@@ -13,9 +13,9 @@ type ValidationError struct {
 
 type ValidationErrors []ValidationError
 
-func (errors ValidationErrors) Error() string {
+func (errs ValidationErrors) Error() string {
 	output := ""
-	for _, e := range errors {
+	for _, e := range errs {
 		output += e.Field + ": " + e.Err.Error() + "\n"
 	}
 	return output
@@ -87,8 +87,6 @@ func Validate(v interface{}) error {
 		}
 		validationErrors = append(validationErrors, fieldValidationErrors...)
 	}
-
-	fmt.Println(validationErrors)
 
 	return validationErrors
 }

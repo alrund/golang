@@ -14,7 +14,7 @@ var (
 	ErrUnknownValidator = errors.New("unknown validator")
 
 	ErrValidate       = errors.New("validation error")
-	ErrValidateLength = fmt.Errorf("length exceeded: %w", ErrValidate)
+	ErrValidateLength = fmt.Errorf("not equal: %w", ErrValidate)
 	ErrValidateMin    = fmt.Errorf("min value exceeded: %w", ErrValidate)
 	ErrValidateMax    = fmt.Errorf("max value exceeded: %w", ErrValidate)
 	ErrValidateIn     = fmt.Errorf("not contained: %w", ErrValidate)
@@ -126,9 +126,9 @@ func LenValidator(reflectValue reflect.Value, parameter string) error {
 		return err
 	}
 
-	if length := len(value); length > limit {
+	if length := len(value); length != limit {
 		return fmt.Errorf(
-			"the length %d of the phone %s is greater than the limit %d: %w",
+			"the length of %d of the value '%s' is not equal to %d: %w",
 			length,
 			value,
 			limit,
