@@ -45,9 +45,9 @@ func TestValidate(t *testing.T) {
 			User{
 				"xxx",
 				"xxx",
-				300,
-				"test@test.ru",
-				"stufffff",
+				404,
+				"testtest.ru",
+				"stuff",
 				[]string{"2322232211166", "22222222222066"},
 				nil,
 			},

@@ -31,7 +31,7 @@ func Validate(v interface{}) error {
 		return fmt.Errorf("expected a struct, but received %T: %w", structReflectValue, ErrUnexpectedType)
 	}
 
-	validationErrors := make(ValidationErrors, 0)
+	var validationErrors ValidationErrors
 
 	structReflectType := structReflectValue.Type()
 	for i := 0; i < structReflectType.NumField(); i++ {
@@ -44,14 +44,42 @@ func Validate(v interface{}) error {
 			continue
 		}
 
-		var fieldValidationErrors ValidationErrors
-		var err error
+		var (
+			fieldValidationErrors ValidationErrors
+			err                   error
+		)
 
 		switch reflectValue.Kind() {
 		case reflect.Slice:
 			fieldValidationErrors, err = validateSliceField(reflectStructField.Name, reflectValue, validatorTags)
 		case reflect.String, reflect.Int:
 			fieldValidationErrors, err = validateSimpleField(reflectStructField.Name, reflectValue, validatorTags)
+		case // for golangci-lint
+			reflect.Array,
+			reflect.Bool,
+			reflect.Chan,
+			reflect.Complex128,
+			reflect.Complex64,
+			reflect.Float32,
+			reflect.Float64,
+			reflect.Func,
+			reflect.Int16,
+			reflect.Int32,
+			reflect.Int64,
+			reflect.Int8,
+			reflect.Interface,
+			reflect.Invalid,
+			reflect.Map,
+			reflect.Ptr,
+			reflect.Struct,
+			reflect.Uint,
+			reflect.Uint16,
+			reflect.Uint32,
+			reflect.Uint64,
+			reflect.Uint8,
+			reflect.Uintptr,
+			reflect.UnsafePointer:
+			continue
 		}
 
 		if err != nil {
@@ -65,7 +93,9 @@ func Validate(v interface{}) error {
 	return validationErrors
 }
 
-func validateSliceField(fieldName string, sliceReflectValue reflect.Value, validatorTags ValidatorTags) (ValidationErrors, error) {
+func validateSliceField(
+	fieldName string, sliceReflectValue reflect.Value, validatorTags ValidatorTags,
+) (ValidationErrors, error) {
 	reflectValues, ok := getSliceReflectValues(sliceReflectValue)
 	if !ok {
 		return nil, nil
@@ -82,8 +112,10 @@ func validateSliceField(fieldName string, sliceReflectValue reflect.Value, valid
 	return validationErrors, nil
 }
 
-func validateSimpleField(fieldName string, reflectValue reflect.Value, validatorTags ValidatorTags) (ValidationErrors, error) {
-	var validationErrors ValidationErrors
+func validateSimpleField(
+	fieldName string, reflectValue reflect.Value, validatorTags ValidatorTags,
+) (ValidationErrors, error) {
+	validationErrors := make(ValidationErrors, 0)
 
 	for _, validatorTag := range validatorTags {
 		validationError, err := useValidator(fieldName, reflectValue, validatorTag)
@@ -128,7 +160,7 @@ func getSliceReflectValues(reflectValue reflect.Value) ([]reflect.Value, bool) {
 }
 
 func getStringSliceReflectValues(reflectValue reflect.Value) ([]reflect.Value, bool) {
-	var values []reflect.Value
+	values := make([]reflect.Value, 0)
 	items, ok := reflectValue.Interface().([]string)
 	if !ok {
 		return values, false
@@ -142,7 +174,7 @@ func getStringSliceReflectValues(reflectValue reflect.Value) ([]reflect.Value, b
 }
 
 func getIntSliceReflectValues(reflectValue reflect.Value) ([]reflect.Value, bool) {
-	var values []reflect.Value
+	values := make([]reflect.Value, 0)
 	items, ok := reflectValue.Interface().([]int)
 	if !ok {
 		return values, false
