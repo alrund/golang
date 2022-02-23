@@ -36,6 +36,11 @@ func Validate(v interface{}) error {
 	structReflectType := structReflectValue.Type()
 	for i := 0; i < structReflectType.NumField(); i++ {
 		reflectStructField := structReflectType.Field(i)
+
+		if !reflectStructField.IsExported() {
+			continue
+		}
+
 		reflectValue := structReflectValue.Field(i)
 		structTag := reflectStructField.Tag.Get(tagName)
 
