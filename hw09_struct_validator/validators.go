@@ -17,8 +17,8 @@ var (
 	ErrValidateLength = fmt.Errorf("not equal: %w", ErrValidate)
 	ErrValidateMin    = fmt.Errorf("min value exceeded: %w", ErrValidate)
 	ErrValidateMax    = fmt.Errorf("max value exceeded: %w", ErrValidate)
-	ErrValidateIn     = fmt.Errorf("not contained: %w", ErrValidate)
-	ErrValidateRegexp = fmt.Errorf("not match: %w", ErrValidate)
+	ErrValidateIn     = fmt.Errorf("does not contain: %w", ErrValidate)
+	ErrValidateRegexp = fmt.Errorf("does not match: %w", ErrValidate)
 )
 
 type Validator func(reflectValue reflect.Value, parameter string) error

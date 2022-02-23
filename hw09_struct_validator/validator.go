@@ -88,7 +88,7 @@ func Validate(v interface{}) error {
 		validationErrors = append(validationErrors, fieldValidationErrors...)
 	}
 
-	return &validationErrors
+	return validationErrors
 }
 
 func validateSliceField(
