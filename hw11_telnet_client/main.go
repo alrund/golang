@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -20,17 +19,9 @@ func init() {
 
 func main() {
 	flag.Parse()
-	args := flag.Args()
-	if argLen := len(args); argLen != 2 {
-		log.Fatalf("Invalid number of arguments (%d)\n", argLen)
-	}
 
-	address := net.JoinHostPort(args[0], args[1])
-
-	client := NewTelnetClient(address, timeout, os.Stdin, os.Stdout)
-	if err := client.Connect(); err != nil {
-		log.Fatalf("Can't connect to %s\n", address)
-	}
+	address := getAddress(flag.Args())
+	client := *getTelnetClient(address)
 	defer func() { _ = client.Close() }()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -49,7 +40,6 @@ func main() {
 		for {
 			err := client.Send()
 			if err != nil {
-				_, _ = fmt.Fprintln(os.Stderr, "...Connection was closed by peer")
 				os.Exit(1)
 			}
 		}
@@ -66,4 +56,21 @@ func main() {
 	}()
 
 	wg.Wait()
+}
+
+func getTelnetClient(address string) *TelnetClient {
+	client := NewTelnetClient(address, timeout, os.Stdin, os.Stdout)
+	if err := client.Connect(); err != nil {
+		log.Fatalf("Can't connect to %s\n", address)
+	}
+
+	return &client
+}
+
+func getAddress(args []string) string {
+	if argLen := len(args); argLen != 2 {
+		log.Fatalf("Invalid number of arguments (%d)\n", argLen)
+	}
+
+	return net.JoinHostPort(args[0], args[1])
 }

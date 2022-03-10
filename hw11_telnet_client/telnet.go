@@ -35,7 +35,7 @@ func (t *TClient) Connect() error {
 	conn, err := net.DialTimeout("tcp", t.Address, t.Timeout)
 	if err == nil {
 		t.Conn = conn
-		_, _ = fmt.Fprintf(os.Stderr, "...Connected to %s\n", t.Address)
+		t.log(fmt.Sprintf("...Connected to %s", t.Address))
 	}
 
 	return err
@@ -46,47 +46,48 @@ func (t *TClient) Close() error {
 }
 
 func (t *TClient) Send() error {
-	ch, errch := makeChannel(t.In)
+	err := t.call(t.In, t.Conn)
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			t.log("...EOF")
+			return nil
+		}
+		t.log("...Connection was closed by peer")
+	}
+	return err
+}
+
+func (t *TClient) Receive() error {
+	err := t.call(t.Conn, t.Out)
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		t.log("...Connection was closed by peer")
+	}
+	return err
+}
+
+func (t *TClient) call(r io.Reader, w io.Writer) error {
+	ch, errch := makeChannel(r)
 	for {
 		select {
 		case str, ok := <-ch:
 			if !ok {
 				return ErrClosedChannel
 			}
-			_, err := t.Conn.Write([]byte(str))
+			_, err := w.Write([]byte(str))
 			if err != nil {
 				return err
 			}
 		case errc := <-errch:
-			if errors.Is(errc, io.EOF) {
-				_, _ = fmt.Fprintln(os.Stderr, "...EOF")
-				return nil
-			}
 			return errc
 		}
 	}
 }
 
-func (t *TClient) Receive() error {
-	ch, errch := makeChannel(t.Conn)
-	for {
-		select {
-		case str, ok := <-ch:
-			if !ok {
-				return ErrClosedChannel
-			}
-			_, err := t.Out.Write([]byte(str))
-			if err != nil {
-				return err
-			}
-		case errc := <-errch:
-			if errors.Is(errc, io.EOF) {
-				_, _ = fmt.Fprintln(os.Stderr, "...EOF")
-				return nil
-			}
-			return errc
-		}
-	}
+func (t *TClient) log(msg string) {
+	_, _ = fmt.Fprintln(os.Stderr, msg)
 }
 
 func makeChannel(r io.Reader) (<-chan string, <-chan error) {
