@@ -62,4 +62,12 @@ func TestTelnetClient(t *testing.T) {
 
 		wg.Wait()
 	})
+
+	t.Run("basic", func(t *testing.T) {
+		str := "hello\n"
+		in := &bytes.Buffer{}
+		in.WriteString(str)
+		ch, _ := makeChannel(in)
+		require.Equal(t, str, <-ch)
+	})
 }
